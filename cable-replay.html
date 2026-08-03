@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark light">
+  <meta name="color-scheme" content="light">
   <title>配線リプレイ</title>
   <style>
     :root { --ink:#eef5ff; --muted:#9baabe; --panel:#111a28; --panel-2:#172235; --line:#2b3b54; --accent:#72e2bd; --accent-2:#7c9cff; --danger:#ff7884; --shadow:0 18px 45px rgba(0,0,0,.22); }
@@ -79,6 +79,33 @@
     .restore-actions { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
     .safety { margin-top:16px; color:#f8dca8; background:#332817; border:1px solid #6b5229; padding:11px 13px; border-radius:9px; font-size:13px; }
     .footer-tools { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center; margin-top:18px; color:var(--muted); font-size:13px; }
+    /* 明るい作業画面：写真と端子の色を見分けやすくする */
+    :root { --ink:#1d2b3a; --muted:#607082; --panel:#ffffff; --panel-2:#e7f0fa; --line:#cad8e6; --accent:#087d5a; --accent-2:#356ee8; --danger:#bd3242; --shadow:0 12px 30px rgba(43,72,100,.12); }
+    body { background:linear-gradient(145deg,#e9f4ff 0%,#f9fbff 46%,#eef8f4 100%); color:var(--ink); }
+    .eyebrow { color:#087d5a; }
+    .subtitle { color:#536579; }
+    .privacy { background:#e9f8f1; border-color:#9bd6bd; color:#086342; }
+    .card { background:rgba(255,255,255,.94); border-color:#cbd9e7; }
+    .tabs { background:#edf3f9; }
+    .tab { color:#5b6b7f; }
+    .tab.active { background:#fff; color:#173050; box-shadow:0 2px 7px rgba(57,88,120,.13); }
+    .btn { background:#f5f8fc; border-color:#b9c9da; color:#213449; }
+    .btn.primary { background:#087d5a; border-color:#087d5a; color:#fff; }
+    .btn.danger { background:#fff1f2; border-color:#ebb8be; color:#a32233; }
+    .stage-wrap { background:#edf3f8; border-color:#9fb7cd; }
+    .empty-stage { color:#607082; }
+    .empty-stage strong { color:#273c54; }
+    .pin { border-color:#fff; box-shadow:0 0 0 2px rgba(18,47,76,.24),0 3px 10px rgba(32,59,86,.26); }
+    .pin::after { background:#fff; border-color:#9db0c4; color:#1d2b3a; box-shadow:0 2px 8px rgba(48,76,105,.16); }
+    .notice { background:#e9f8f1; border-color:#a0d5be; color:#075f41; }
+    input,select { color:#213449; background:#fff; border-color:#b7c8d9; }
+    .list-item { background:#f7faff; border-color:#d3dfeb; }
+    .order { background:#dce9f8; color:#234d7d; }
+    .restore-box { background:linear-gradient(145deg,#edf8f4,#f4f8ff); border-color:#a8cbbd; }
+    .restore-route { color:#385069; }
+    .safety { color:#74500f; background:#fff8e8; border-color:#e7cc8c; }
+    .demo-guide { background:linear-gradient(110deg,#e5f7ef,#ebf2ff); border-color:#9dcdbb; color:#164a3e; }
+    .demo-guide span { color:#486c66; }
     .visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
     @media (max-width:900px) { .layout { grid-template-columns:1fr; } header { align-items:flex-start; flex-direction:column; } .privacy { white-space:normal; } }
     @media (max-width:580px) { .app { padding:18px 12px 30px; } .toolbar { align-items:stretch; } .tabs { width:100%; justify-content:space-between; } .tab { flex:1; padding-inline:5px; } .split { grid-template-columns:1fr; } .stage-wrap { min-height:280px; } .demo-guide { align-items:stretch; flex-direction:column; } }
@@ -154,7 +181,7 @@
         <div class="port-list" id="portList"></div>
       </aside>
     </section>
-    <div class="footer-tools no-print"><span>画像・端子・接続順は端末内へ保存されます。重要な記録はエクスポートしてください。</span><span><button class="btn small" id="exportProject">書き出し</button> <button class="btn small" id="importProject">読み込み</button> <button class="btn danger small" id="clearProject">消去</button></span></div>
+    <div class="footer-tools no-print"><span>写真・端子・接続順は端末内へ保存されます。通常は読みやすい復旧ガイドを書き出し、引き継ぎや印刷に使えます。</span><span><button class="btn primary small" id="exportGuide">復旧ガイドを書き出し</button> <button class="btn small" id="backupProject">データをバックアップ(JSON)</button> <button class="btn small" id="importProject">バックアップを読み込む</button> <button class="btn danger small" id="clearProject">消去</button></span></div>
     <input id="importInput" class="visually-hidden" type="file" accept="application/json,.json">
   </main>
 
@@ -185,6 +212,9 @@
       function persist() { if(ui.demo) return; try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { alert('設定を保存できませんでした。書き出しでバックアップしてください。'); } }
       function uid(prefix) { return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`; }
       function escapeHtml(value) { return String(value || '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+      function blobToDataUrl(blob) { return new Promise((resolve,reject)=>{ const reader=new FileReader(); reader.onload=()=>resolve(reader.result); reader.onerror=()=>reject(reader.error); reader.readAsDataURL(blob); }); }
+      function downloadFile(blob, filename) { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+      function safeFileName() { return (state.name||'cable-replay').replace(/[\\/:*?"<>|]/g,'_'); }
       function db() { return new Promise((resolve,reject) => { const req=indexedDB.open('cableReplayDB',1); req.onupgradeneeded=() => req.result.createObjectStore('assets'); req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error); }); }
       async function assetGet(id) { const database=await db(); return new Promise((resolve,reject)=>{const r=database.transaction('assets').objectStore('assets').get(id); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);}); }
       async function assetPut(id, value) { const database=await db(); return new Promise((resolve,reject)=>{const r=database.transaction('assets','readwrite').objectStore('assets').put(value,id); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);}); }
@@ -222,7 +252,8 @@
       $('emptyDemoStart').addEventListener('click',toggleDemo);
       els.demoGuide.addEventListener('click',e=>{if(e.target.id==='demoNext')advanceDemo();});
       $('clearProject').addEventListener('click',async()=>{if(ui.demo)return alert('デモ中の消去はできません。デモを終了すると、あなたの記録に戻ります。');if(!confirm('この端末内の写真・端子・接続順をすべて消去しますか？'))return;state=defaultState();ui.restoreIndex=0;ui.completed.clear();localStorage.removeItem(STORE_KEY);await assetDelete(IMAGE_ID).catch(()=>{});await refreshPhoto();render();});
-      $('exportProject').addEventListener('click',async()=>{const out={version:1,exportedAt:new Date().toISOString(),project:state}; const blob=await assetGet(IMAGE_ID).catch(()=>null); if(blob){out.photoData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob);});} const data=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(data);a.download=`${(state.name||'cable-replay').replace(/[\\/:*?"<>|]/g,'_')}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+      $('exportGuide').addEventListener('click',async()=>{ const photoBlob=ui.demo?null:await assetGet(IMAGE_ID).catch(()=>null); const photoData=photoBlob?await blobToDataUrl(photoBlob):''; const ordered=orderedConnections(); const list=(items,verb)=>items.length?items.map((c,i)=>{const from=getPort(c.from),to=getPort(c.to);return `<li><strong>${i+1}. ${escapeHtml(c.name)}</strong><br><span>${escapeHtml(from?.label||'削除済み端子')} → ${escapeHtml(to?.label||'削除済み端子')} を${verb}</span></li>`;}).join(''):'<li>接続はまだ登録されていません。</li>'; const ports=state.ports.length?state.ports.map(p=>`<li><b>${escapeHtml(p.label)}</b> <span>（${escapeHtml(p.type)}）</span></li>`).join(''):'<li>端子はまだ登録されていません。</li>'; const created=new Date().toLocaleString('ja-JP'); const guide=`<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(state.name)} - 復旧ガイド</title><style>body{max-width:850px;margin:0 auto;padding:28px 18px;color:#1d2b3a;background:#f5f8fb;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.65}header,section{background:#fff;border:1px solid #d1dce8;border-radius:14px;padding:20px;margin-bottom:16px}h1{margin:0;color:#087d5a}h2{font-size:19px;margin:0 0 10px;color:#294967}.note{color:#607082;font-size:14px}.photo{width:100%;border-radius:10px;border:1px solid #cad8e6;margin-top:12px}ol,ul{padding-left:25px}li{margin:10px 0}li span{color:#52687f}@media print{body{background:#fff;padding:0}header,section{border-color:#ddd;break-inside:avoid}}</style></head><body><header><h1>${escapeHtml(state.name)} — 復旧ガイド</h1><p class="note">作成日時：${escapeHtml(created)}。このファイルは人が読むためのガイドです。編集用データは含みません。</p>${photoData?`<img class="photo" src="${photoData}" alt="記録写真">`:''}</header><section><h2>記録した端子</h2><ul>${ports}</ul></section><section><h2>外すときの順番</h2><ol>${list(ordered,'外す')}</ol></section><section><h2>戻すときの順番</h2><ol>${list([...ordered].reverse(),'接続する')}</ol></section><section><h2>確認メモ</h2><p>□ 機器の電源状態を確認　□ 写真どおりに接続　□ ケーブルが奥まで入っていることを確認</p></section></body></html>`; downloadFile(new Blob([guide],{type:'text/html;charset=utf-8'}),`${safeFileName()}_復旧ガイド.html`); });
+      $('backupProject').addEventListener('click',async()=>{const out={version:1,exportedAt:new Date().toISOString(),project:state}; const blob=ui.demo?null:await assetGet(IMAGE_ID).catch(()=>null); if(blob) out.photoData=await blobToDataUrl(blob); downloadFile(new Blob([JSON.stringify(out,null,2)],{type:'application/json'}),`${safeFileName()}.json`);});
       $('importProject').addEventListener('click',()=>$('importInput').click());
       $('importInput').addEventListener('change',async e=>{if(ui.demo){e.target.value='';return alert('デモ中は読み込みできません。デモを終了してから実行してください。');}const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!data.project||!Array.isArray(data.project.ports)||!Array.isArray(data.project.connections))throw new Error('invalid');if(!confirm(`「${data.project.name||'名称なし'}」を読み込み、現在の内容を置き換えますか？`))return;state={...defaultState(),...data.project};normalizeOrders();if(data.photoData){const response=await fetch(data.photoData);await assetPut(IMAGE_ID,await response.blob());}else await assetDelete(IMAGE_ID).catch(()=>{});persist();await refreshPhoto();render();setTab('map');}catch{alert('配線リプレイから書き出したJSONファイルを選択してください。');}finally{e.target.value='';}});
       refreshPhoto().then(render);
