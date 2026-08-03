@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>配線リプレイ</title>
+  <style>
+    :root { --ink:#eef5ff; --muted:#9baabe; --panel:#111a28; --panel-2:#172235; --line:#2b3b54; --accent:#72e2bd; --accent-2:#7c9cff; --danger:#ff7884; --shadow:0 18px 45px rgba(0,0,0,.22); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(circle at 10% -10%,#1f4068 0,transparent 34rem),radial-gradient(circle at 95% 0,#263759 0,transparent 28rem),#0a101a; color:var(--ink); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; min-height:100vh; }
+    button,input,select { font:inherit; }
+    button { cursor:pointer; }
+    .app { max-width:1400px; margin:auto; padding:28px 22px 42px; }
+    header { display:flex; justify-content:space-between; gap:22px; align-items:flex-end; padding:6px 4px 25px; }
+    .eyebrow { color:var(--accent); font-size:12px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; }
+    h1 { font-size:clamp(28px,5vw,48px); margin:2px 0 0; letter-spacing:-.055em; line-height:1; }
+    .subtitle { color:var(--muted); margin:10px 0 0; max-width:660px; }
+    .privacy { border:1px solid #31576a; background:#10252b; color:#b8f5df; padding:9px 12px; border-radius:99px; white-space:nowrap; font-size:13px; }
+    .card { background:linear-gradient(150deg,rgba(25,37,57,.96),rgba(14,23,37,.96)); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); }
+    .toolbar { display:flex; gap:10px; align-items:center; padding:12px; margin-bottom:18px; flex-wrap:wrap; }
+    .project-name { flex:1 1 240px; background:transparent; border:0; color:var(--ink); font-size:18px; font-weight:750; outline:none; padding:7px 9px; }
+    .tabs { display:flex; gap:5px; background:#0c1421; border-radius:11px; padding:4px; }
+    .tab { border:0; background:transparent; color:var(--muted); padding:8px 13px; border-radius:8px; font-weight:700; }
+    .tab.active { background:var(--panel-2); color:var(--ink); }
+    .btn { border:1px solid var(--line); background:#1b2a40; color:var(--ink); border-radius:10px; padding:9px 13px; font-weight:750; }
+    .btn:hover { filter:brightness(1.13); }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#082019; }
+    .btn.danger { background:#2b1821; border-color:#67303a; color:#ffb8bf; }
+    .btn.small { padding:6px 9px; font-size:13px; }
+    .btn:disabled { opacity:.42; cursor:not-allowed; }
+    .layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(300px,.75fr); gap:18px; }
+    .main-card,.side-card { padding:18px; }
+    .section-head { display:flex; gap:12px; justify-content:space-between; align-items:baseline; margin-bottom:13px; }
+    h2 { font-size:18px; margin:0; letter-spacing:-.025em; }
+    .hint { color:var(--muted); font-size:13px; margin:0; }
+    .stage-wrap { background:#080d15; border:1px dashed #3a4b65; border-radius:14px; padding:10px; min-height:380px; display:grid; place-items:center; overflow:hidden; }
+    .stage { width:min(100%,900px); position:relative; line-height:0; display:none; }
+    .stage.show { display:block; }
+    .stage img { width:100%; display:block; border-radius:8px; max-height:620px; object-fit:contain; }
+    .empty-stage { color:var(--muted); text-align:center; max-width:310px; line-height:1.6; }
+    .empty-stage strong { display:block; font-size:17px; color:#d6e2f2; margin-bottom:6px; }
+    .pin { position:absolute; transform:translate(-50%,-50%); width:27px; height:27px; border-radius:50%; border:3px solid #07111b; box-shadow:0 0 0 2px rgba(255,255,255,.75),0 3px 10px rgba(0,0,0,.5); z-index:3; }
+    .pin::after { content:attr(data-tag); position:absolute; top:30px; left:50%; transform:translateX(-50%); background:#08111fdd; border:1px solid #55657d; color:#fff; border-radius:5px; padding:2px 5px; font-size:11px; font-weight:800; line-height:1.3; white-space:nowrap; }
+    .pin.active { animation:pulse 1.1s infinite; outline:3px solid #fff; }
+    @keyframes pulse { 50% { transform:translate(-50%,-50%) scale(1.28); } }
+    .place-mode { outline:3px solid var(--accent); outline-offset:4px; cursor:crosshair; }
+    .notice { margin:12px 0 0; padding:10px 12px; border-radius:9px; background:#102d2b; border:1px solid #276259; color:#c2f8e4; font-size:13px; }
+    .form-stack { display:grid; gap:11px; }
+    label { display:grid; gap:5px; color:#cbd5e5; font-size:13px; font-weight:700; }
+    input,select { width:100%; color:var(--ink); background:#0c1523; border:1px solid #35465f; border-radius:9px; padding:9px 10px; outline:none; }
+    input:focus,select:focus { border-color:var(--accent-2); box-shadow:0 0 0 3px #718eff29; }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .side-card { height:max-content; }
+    .port-list,.connection-list { display:grid; gap:8px; }
+    .list-item { display:flex; align-items:center; justify-content:space-between; gap:9px; background:#0c1523; border:1px solid #2b3b54; padding:9px; border-radius:10px; }
+    .list-item small { color:var(--muted); display:block; }
+    .dot { width:12px; height:12px; border-radius:50%; display:inline-block; vertical-align:-1px; margin-right:6px; border:1px solid #fff8; }
+    .muted-empty { color:var(--muted); padding:20px 4px; text-align:center; }
+    .full { grid-column:1/-1; }
+    .connections-view,.restore-view { display:none; }
+    .connections-view.show,.restore-view.show { display:block; }
+    .map-view.hide { display:none; }
+    .connection-row { display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:10px; }
+    .order { width:28px; height:28px; display:grid; place-items:center; border-radius:50%; background:#273a56; color:#dce9ff; font-size:12px; font-weight:800; }
+    .connection-row strong { display:block; }
+    .connection-row .meta { color:var(--muted); font-size:13px; }
+    .row-actions { display:flex; gap:5px; }
+    .restore-box { text-align:center; padding:30px 20px 22px; background:linear-gradient(145deg,#152a3c,#172138); border:1px solid #3c5577; border-radius:15px; }
+    .step-count { color:var(--accent); font-size:13px; font-weight:850; letter-spacing:.09em; text-transform:uppercase; }
+    .restore-box h3 { margin:10px 0 5px; font-size:clamp(24px,4vw,35px); letter-spacing:-.05em; }
+    .restore-route { font-size:17px; color:#c5d3e7; margin:0; }
+    .restore-note { color:var(--muted); margin:16px auto 20px; max-width:500px; }
+    .restore-actions { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; }
+    .safety { margin-top:16px; color:#f8dca8; background:#332817; border:1px solid #6b5229; padding:11px 13px; border-radius:9px; font-size:13px; }
+    .footer-tools { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; align-items:center; margin-top:18px; color:var(--muted); font-size:13px; }
+    .visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+    @media (max-width:900px) { .layout { grid-template-columns:1fr; } header { align-items:flex-start; flex-direction:column; } .privacy { white-space:normal; } }
+    @media (max-width:580px) { .app { padding:18px 12px 30px; } .toolbar { align-items:stretch; } .tabs { width:100%; justify-content:space-between; } .tab { flex:1; padding-inline:5px; } .split { grid-template-columns:1fr; } .stage-wrap { min-height:280px; } }
+    @media print { body { background:#fff; color:#111; } .app { max-width:none; padding:0; } header,.toolbar,.side-card,.connections-view,.footer-tools,.notice,.safety,.btn { display:none!important; } .layout { display:block; } .main-card { border:0; box-shadow:none; padding:0; background:#fff; } .stage-wrap { border:0; min-height:0; padding:0; background:white; } .pin::after { background:white; color:#111; border-color:#777; } .pin { border-color:white; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <div class="eyebrow">Offline connection recovery guide</div>
+        <h1>配線リプレイ</h1>
+        <p class="subtitle">外す前の写真を、戻すときの一手ずつのガイドへ。データはこのブラウザ内だけに保存されます。</p>
+      </div>
+      <div class="privacy">● サーバー送信なし・ログイン不要</div>
+    </header>
+
+    <section class="toolbar card no-print">
+      <label class="visually-hidden" for="projectName">プロジェクト名</label>
+      <input id="projectName" class="project-name" value="リビングの配線" maxlength="80">
+      <nav class="tabs" aria-label="画面切替">
+        <button class="tab active" data-tab="map">1. 写真と端子</button>
+        <button class="tab" data-tab="connections">2. 接続順</button>
+        <button class="tab" data-tab="restore">3. 復旧モード</button>
+      </nav>
+    </section>
+
+    <section class="layout">
+      <article class="main-card card">
+        <div class="map-view" id="mapView">
+          <div class="section-head"><div><h2>機器の背面を記録</h2><p class="hint">写真を入れ、端子をクリックして名前を置きます。</p></div><button class="btn" id="choosePhoto">写真を選ぶ</button></div>
+          <input id="photoInput" class="visually-hidden" type="file" accept="image/*">
+          <div class="stage-wrap">
+            <div class="empty-stage" id="emptyStage"><strong>まず、全体が見える写真を選択</strong>ルーター・テレビ・ゲーム機など、接続先と端子が一緒に見える状態がおすすめです。</div>
+            <div class="stage" id="stage" aria-label="端子を置く写真"><img id="photo" alt="配線を記録する機器の写真"></div>
+          </div>
+          <p class="notice" id="placementNotice" hidden></p>
+          <div class="footer-tools"><span id="photoStatus">写真は未登録です</span><button class="btn small" id="printGuide">この写真を印刷</button></div>
+        </div>
+
+        <div class="connections-view" id="connectionsView">
+          <div class="section-head"><div><h2>外した順をつくる</h2><p class="hint">復旧時は、ここでの順番を逆から案内します。</p></div></div>
+          <div class="connection-list" id="connectionList"></div>
+          <p class="safety">安全のため、壁内配線・電源工事・機器の分解は扱いません。外せる既存ケーブルだけを記録してください。</p>
+        </div>
+
+        <div class="restore-view" id="restoreView">
+          <div class="section-head"><div><h2>復旧モード</h2><p class="hint">外した順の逆から、ひとつずつ接続します。</p></div></div>
+          <div class="restore-box" id="restoreBox"></div>
+          <p class="safety">このアプリは接続の記録を再生するだけです。発熱・破損・異臭がある場合は接続を中止し、機器の公式案内や専門家を確認してください。</p>
+        </div>
+      </article>
+
+      <aside class="side-card card no-print" id="sidePanel">
+        <div class="section-head"><div><h2>端子を追加</h2><p class="hint">写真上の端子を名前付きで記録。</p></div></div>
+        <div class="form-stack">
+          <label>端子名<input id="portLabel" maxlength="40" placeholder="例：テレビ HDMI 2"></label>
+          <div class="split"><label>分類<select id="portType"><option>映像</option><option>音声</option><option>ネットワーク</option><option>電源</option><option>USB / 周辺機器</option><option>その他</option></select></label><label>色<input id="portColor" type="color" value="#72e2bd"></label></div>
+          <button class="btn primary" id="startPlacement">写真で端子を置く</button>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+        <div class="section-head"><div><h2>接続を追加</h2><p class="hint">ケーブルの両端を選びます。</p></div></div>
+        <div class="form-stack">
+          <label>ケーブル名<input id="cableName" maxlength="50" placeholder="例：HDMI ケーブル"></label>
+          <label>端子 A<select id="fromPort"></select></label>
+          <label>端子 B<select id="toPort"></select></label>
+          <button class="btn primary" id="addConnection">接続として記録</button>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+        <div class="section-head"><div><h2>登録済み端子</h2><p class="hint" id="portCount"></p></div></div>
+        <div class="port-list" id="portList"></div>
+      </aside>
+    </section>
+    <div class="footer-tools no-print"><span>画像・端子・接続順は端末内へ保存されます。重要な記録はエクスポートしてください。</span><span><button class="btn small" id="exportProject">書き出し</button> <button class="btn small" id="importProject">読み込み</button> <button class="btn danger small" id="clearProject">消去</button></span></div>
+    <input id="importInput" class="visually-hidden" type="file" accept="application/json,.json">
+  </main>
+
+  <script>
+    (() => {
+      'use strict';
+      const STORE_KEY = 'cableReplay.project.v1';
+      const IMAGE_ID = 'project-photo';
+      const defaultState = () => ({ name: 'リビングの配線', photoName: '', ports: [], connections: [] });
+      let state = loadState();
+      let imageUrl = null;
+      let ui = { tab: 'map', placing: false, restoreIndex: 0, completed: new Set() };
+      const $ = (id) => document.getElementById(id);
+      const els = { projectName:$('projectName'), photoInput:$('photoInput'), stage:$('stage'), photo:$('photo'), emptyStage:$('emptyStage'), placementNotice:$('placementNotice'), photoStatus:$('photoStatus'), portLabel:$('portLabel'), portType:$('portType'), portColor:$('portColor'), portList:$('portList'), portCount:$('portCount'), cableName:$('cableName'), fromPort:$('fromPort'), toPort:$('toPort'), connectionList:$('connectionList'), restoreBox:$('restoreBox'), mapView:$('mapView'), connectionsView:$('connectionsView'), restoreView:$('restoreView'), sidePanel:$('sidePanel') };
+
+      function loadState() { try { return { ...defaultState(), ...JSON.parse(localStorage.getItem(STORE_KEY) || '{}') }; } catch { return defaultState(); } }
+      function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { alert('設定を保存できませんでした。書き出しでバックアップしてください。'); } }
+      function uid(prefix) { return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`; }
+      function escapeHtml(value) { return String(value || '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+      function db() { return new Promise((resolve,reject) => { const req=indexedDB.open('cableReplayDB',1); req.onupgradeneeded=() => req.result.createObjectStore('assets'); req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error); }); }
+      async function assetGet(id) { const database=await db(); return new Promise((resolve,reject)=>{const r=database.transaction('assets').objectStore('assets').get(id); r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error);}); }
+      async function assetPut(id, value) { const database=await db(); return new Promise((resolve,reject)=>{const r=database.transaction('assets','readwrite').objectStore('assets').put(value,id); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);}); }
+      async function assetDelete(id) { const database=await db(); return new Promise((resolve,reject)=>{const r=database.transaction('assets','readwrite').objectStore('assets').delete(id); r.onsuccess=()=>resolve(); r.onerror=()=>reject(r.error);}); }
+      async function refreshPhoto() { const blob=await assetGet(IMAGE_ID).catch(()=>null); if (imageUrl) URL.revokeObjectURL(imageUrl); imageUrl=null; if(blob) { imageUrl=URL.createObjectURL(blob); els.photo.src=imageUrl; els.stage.classList.add('show'); els.emptyStage.hidden=true; els.photoStatus.textContent=`登録写真：${state.photoName || '名称なし'}`; } else { els.stage.classList.remove('show'); els.emptyStage.hidden=false; els.photoStatus.textContent='写真は未登録です'; } renderPortsOnPhoto(); }
+      function renderPortsOnPhoto() { [...els.stage.querySelectorAll('.pin')].forEach(p=>p.remove()); state.ports.forEach(port=>{const p=document.createElement('button'); p.type='button'; p.className='pin'; p.style.left=`${port.x}%`; p.style.top=`${port.y}%`; p.style.background=port.color; p.dataset.tag=port.label; p.title=port.label; if(currentConnection() && (currentConnection().from===port.id || currentConnection().to===port.id)) p.classList.add('active'); p.addEventListener('click',e=>{e.stopPropagation(); if(!ui.placing) showPort(port);}); els.stage.appendChild(p);}); }
+      function showPort(port) { alert(`${port.label}\n分類：${port.type}`); }
+      function getPort(id) { return state.ports.find(p=>p.id===id); }
+      function setTab(tab) { ui.tab=tab; document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===tab)); els.mapView.classList.toggle('hide',tab!=='map'); els.connectionsView.classList.toggle('show',tab==='connections'); els.restoreView.classList.toggle('show',tab==='restore'); els.sidePanel.style.display=tab==='map' ? '' : 'none'; if(tab==='restore') ui.restoreIndex=0; ui.placing=false; els.placementNotice.hidden=true; render(); }
+      function renderPortSelects() { const option=(p)=>`<option value="${p.id}">${escapeHtml(p.label)} · ${escapeHtml(p.type)}</option>`; const markup=state.ports.length?state.ports.map(option).join(''):'<option value="">先に端子を追加してください</option>'; [els.fromPort,els.toPort].forEach(el=>{ const current=el.value; el.innerHTML=markup; if(state.ports.some(p=>p.id===current)) el.value=current; }); if(state.ports.length>1 && els.fromPort.value===els.toPort.value) els.toPort.selectedIndex=1; }
+      function renderPortList() { els.portCount.textContent=`${state.ports.length}件`; if(!state.ports.length) { els.portList.innerHTML='<div class="muted-empty">写真を選び、端子を追加してください。</div>'; return; } els.portList.innerHTML=state.ports.map(p=>`<div class="list-item"><span><span class="dot" style="background:${p.color}"></span><strong>${escapeHtml(p.label)}</strong><small>${escapeHtml(p.type)}</small></span><button class="btn small" data-delete-port="${p.id}">削除</button></div>`).join(''); }
+      function orderedConnections() { return [...state.connections].sort((a,b)=>a.removalOrder-b.removalOrder); }
+      function renderConnectionList() { const list=orderedConnections(); if(!list.length) { els.connectionList.innerHTML='<div class="muted-empty">端子を2つ選んで、最初の接続を記録してください。</div>'; return; } els.connectionList.innerHTML=list.map((c,index)=>{ const a=getPort(c.from), b=getPort(c.to); return `<div class="list-item connection-row"><span class="order">${index+1}</span><span><strong>${escapeHtml(c.name)}</strong><span class="meta">${escapeHtml(a?.label || '削除済み端子')} → ${escapeHtml(b?.label || '削除済み端子')}</span></span><span class="row-actions"><button class="btn small" data-move="up" data-id="${c.id}" ${index===0?'disabled':''}>↑</button><button class="btn small" data-move="down" data-id="${c.id}" ${index===list.length-1?'disabled':''}>↓</button><button class="btn danger small" data-delete-connection="${c.id}">×</button></span></div>`; }).join(''); }
+      function currentConnection() { const ordered=[...orderedConnections()].reverse(); return ordered[ui.restoreIndex] || null; }
+      function renderRestore() { const ordered=[...orderedConnections()].reverse(); const c=ordered[ui.restoreIndex]; if(!ordered.length) { els.restoreBox.innerHTML='<div class="muted-empty">接続順を登録すると、ここで逆順の復旧ガイドを開始できます。</div>'; return; } if(!c) { els.restoreBox.innerHTML=`<div class="step-count">完了</div><h3>すべての接続を確認しました</h3><p class="restore-note">写真を見ながら、各ケーブルが奥まで差し込まれていることを最終確認してください。</p><div class="restore-actions"><button class="btn" id="restartRestore">もう一度確認する</button><button class="btn primary" id="goConnections">接続順を編集</button></div>`; return; } const a=getPort(c.from),b=getPort(c.to); const step=ui.restoreIndex+1; els.restoreBox.innerHTML=`<div class="step-count">復旧 ${step} / ${ordered.length}</div><h3>${escapeHtml(c.name)}</h3><p class="restore-route"><span style="color:${a?.color || '#fff'}">●</span> ${escapeHtml(a?.label || '削除済み端子')} &nbsp;→&nbsp; <span style="color:${b?.color || '#fff'}">●</span> ${escapeHtml(b?.label || '削除済み端子')}</p><p class="restore-note">写真で光っている2つの端子を結びます。接続できたら、次のケーブルへ進んでください。</p><div class="restore-actions"><button class="btn" id="previousRestore" ${ui.restoreIndex===0?'disabled':''}>前へ</button><button class="btn primary" id="nextRestore">接続できた — 次へ</button></div>`; }
+      function render() { els.projectName.value=state.name; renderPortSelects(); renderPortList(); renderConnectionList(); renderRestore(); renderPortsOnPhoto(); }
+      function normalizeOrders() { orderedConnections().forEach((c,i)=>c.removalOrder=i+1); }
+      function setPlacing(enabled) { if(!imageUrl && enabled) { alert('先に写真を選択してください。'); return; } ui.placing=enabled; els.stage.classList.toggle('place-mode',enabled); els.placementNotice.hidden=!enabled; els.placementNotice.textContent=enabled ? `「${els.portLabel.value.trim() || '名称未入力'}」を置く場所を写真上でクリックしてください。` : ''; }
+
+      $('choosePhoto').addEventListener('click',()=>els.photoInput.click());
+      els.photoInput.addEventListener('change',async e=>{ const file=e.target.files[0]; if(!file) return; if(!file.type.startsWith('image/')) return alert('画像ファイルを選択してください。'); await assetPut(IMAGE_ID,file); state.photoName=file.name; state.ports=[]; state.connections=[]; persist(); await refreshPhoto(); render(); e.target.value=''; });
+      els.projectName.addEventListener('input',e=>{state.name=e.target.value.trim()||'無題の配線';persist();});
+      $('startPlacement').addEventListener('click',()=>{ if(!els.portLabel.value.trim()) { els.portLabel.focus(); return alert('端子名を入力してください。'); } setPlacing(!ui.placing); });
+      els.stage.addEventListener('click',e=>{ if(!ui.placing || !imageUrl) return; const rect=els.stage.getBoundingClientRect(); const x=Math.min(99,Math.max(1,((e.clientX-rect.left)/rect.width)*100)); const y=Math.min(99,Math.max(1,((e.clientY-rect.top)/rect.height)*100)); state.ports.push({id:uid('port'),label:els.portLabel.value.trim(),type:els.portType.value,color:els.portColor.value,x,y}); persist(); els.portLabel.value=''; setPlacing(false); render(); });
+      els.portList.addEventListener('click',e=>{const id=e.target.dataset.deletePort; if(!id) return; const p=getPort(id); if(!confirm(`「${p.label}」と、その接続を削除しますか？`)) return; state.ports=state.ports.filter(x=>x.id!==id); state.connections=state.connections.filter(c=>c.from!==id&&c.to!==id); normalizeOrders(); persist();render();});
+      $('addConnection').addEventListener('click',()=>{const from=els.fromPort.value,to=els.toPort.value,name=els.cableName.value.trim(); if(!name) return alert('ケーブル名を入力してください。'); if(!from||!to||from===to) return alert('異なる2つの端子を選択してください。'); state.connections.push({id:uid('cable'),name,from,to,removalOrder:state.connections.length+1}); persist(); els.cableName.value=''; render(); setTab('connections');});
+      els.connectionList.addEventListener('click',e=>{const deleteId=e.target.dataset.deleteConnection; if(deleteId){state.connections=state.connections.filter(c=>c.id!==deleteId);normalizeOrders();persist();render();return;} const id=e.target.dataset.id,dir=e.target.dataset.move; if(!id||!dir)return; const list=orderedConnections(),i=list.findIndex(c=>c.id===id),swap=dir==='up'?i-1:i+1; if(swap<0||swap>=list.length)return; [list[i].removalOrder,list[swap].removalOrder]=[list[swap].removalOrder,list[i].removalOrder];persist();render();});
+      document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
+      els.restoreBox.addEventListener('click',e=>{if(e.target.id==='nextRestore'){ui.completed.add(currentConnection()?.id);ui.restoreIndex++;render();} if(e.target.id==='previousRestore'){ui.restoreIndex=Math.max(0,ui.restoreIndex-1);render();} if(e.target.id==='restartRestore'){ui.restoreIndex=0;ui.completed.clear();render();} if(e.target.id==='goConnections')setTab('connections');});
+      $('printGuide').addEventListener('click',()=>window.print());
+      $('clearProject').addEventListener('click',async()=>{if(!confirm('この端末内の写真・端子・接続順をすべて消去しますか？'))return;state=defaultState();ui.restoreIndex=0;ui.completed.clear();localStorage.removeItem(STORE_KEY);await assetDelete(IMAGE_ID).catch(()=>{});await refreshPhoto();render();});
+      $('exportProject').addEventListener('click',async()=>{const out={version:1,exportedAt:new Date().toISOString(),project:state}; const blob=await assetGet(IMAGE_ID).catch(()=>null); if(blob){out.photoData=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(r.error);r.readAsDataURL(blob);});} const data=new Blob([JSON.stringify(out,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(data);a.download=`${(state.name||'cable-replay').replace(/[\\/:*?"<>|]/g,'_')}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);});
+      $('importProject').addEventListener('click',()=>$('importInput').click());
+      $('importInput').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());if(!data.project||!Array.isArray(data.project.ports)||!Array.isArray(data.project.connections))throw new Error('invalid');if(!confirm(`「${data.project.name||'名称なし'}」を読み込み、現在の内容を置き換えますか？`))return;state={...defaultState(),...data.project};normalizeOrders();if(data.photoData){const response=await fetch(data.photoData);await assetPut(IMAGE_ID,await response.blob());}else await assetDelete(IMAGE_ID).catch(()=>{});persist();await refreshPhoto();render();setTab('map');}catch{alert('配線リプレイから書き出したJSONファイルを選択してください。');}finally{e.target.value='';}});
+      refreshPhoto().then(render);
+    })();
+  </script>
+</body>
+</html>
